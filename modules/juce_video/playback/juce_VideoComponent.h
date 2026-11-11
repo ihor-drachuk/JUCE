@@ -182,6 +182,21 @@ public:
     */
     String getAudioOutputDevice() const;
 
+    /** Rounds the corners of the video picture, so that the parent component is
+        visible in the corners that the radius cuts off. The picture is the area that
+        the video is fitted into inside this component, or the whole component when no
+        video is opened.
+
+        The default of 0 gives square corners. On Android the radius is stored, but
+        the picture isn't rounded.
+
+        @see getCornerRadius
+    */
+    void setCornerRadius (float newRadius);
+
+    /** Returns the radius passed to `setCornerRadius()`. */
+    float getCornerRadius() const;
+
    #if JUCE_SYNC_VIDEO_VOLUME_WITH_OS_MEDIA_VOLUME
     /** Set this callback to be notified whenever OS global media volume changes.
         Currently used on Android only.

@@ -51,6 +51,7 @@
 #if JUCE_MAC || JUCE_IOS
  #import <AVFoundation/AVFoundation.h>
  #import <AVKit/AVKit.h>
+ #import <QuartzCore/QuartzCore.h>
 
 //==============================================================================
 #elif JUCE_WINDOWS

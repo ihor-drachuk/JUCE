@@ -460,6 +460,10 @@ struct VideoComponent::Pimpl : public AndroidViewComponent,
     void setAudioOutputDevice (const String& deviceID)  { audioOutputDeviceID = deviceID; }
     String getAudioOutputDevice() const                 { return audioOutputDeviceID; }
 
+    // Rounding the picture isn't implemented on Android, so we only store the radius.
+    void setCornerRadius (float newRadius)              { jassert (newRadius >= 0.0f); cornerRadius = newRadius; }
+    float getCornerRadius() const                       { return cornerRadius; }
+
     File currentFile;
     URL currentURL;
 
@@ -1783,6 +1787,7 @@ private:
    #endif
 
     String audioOutputDeviceID;
+    float cornerRadius = 0.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };

@@ -222,25 +222,54 @@ struct VideoComponent::Pimpl : public Component
 
     String getAudioOutputDevice() const { return audioEndpointId; }
 
+    void setCornerRadius (float newRadius)
+    {
+        JUCE_ASSERT_MESSAGE_THREAD
+        jassert (newRadius >= 0.0f);
+
+        if (exactlyEqual (newRadius, cornerRadius))
+            return;
+
+        cornerRadius = newRadius;
+        // We make the picture non-opaque while it has rounded corners, because JUCE doesn't paint the parent under
+        // an opaque component, so the corners would keep stale pixels.
+        setOpaque (cornerRadius <= 0.0f);
+        repaint();
+    }
+
+    float getCornerRadius() const       { return cornerRadius; }
+
     //==============================================================================
     void paint (Graphics& g) override
     {
+        if (cornerRadius > 0.0f)
+        {
+            Path picturePath;
+            picturePath.addRoundedRectangle (getLocalBounds().toFloat(), cornerRadius);
+
+            if (! g.reduceClipRegion (picturePath))
+                return;
+        }
+
         if (player == nullptr)
         {
             g.fillAll (Colours::grey);
             return;
         }
 
-        g.fillAll (Colours::black);
-
-        if (framePath == nullptr)
-            return;
-
-        if (const auto image = framePath->getImage(); image.isValid())
+        if (framePath != nullptr)
         {
-            g.setImageResamplingQuality (Graphics::mediumResamplingQuality);
-            g.drawImage (image, getLocalBounds().toFloat());
+            if (const auto image = framePath->getImage(); image.isValid())
+            {
+                g.setImageResamplingQuality (Graphics::mediumResamplingQuality);
+                g.drawImage (image, getLocalBounds().toFloat());
+                return;
+            }
         }
+
+        // We fill black only while there's no frame, because black under the frame would show as a dark rim where an
+        // edge at a fractional scale covers a pixel partly.
+        g.fillAll (Colours::black);
     }
 
     File currentFile;
@@ -583,9 +612,15 @@ private:
                 const auto rowBytes = (size_t) image.getWidth() * 4;
 
                 for (int row = 0; row < image.getHeight(); ++row)
-                    std::memcpy (bitmapData.getLinePointer (row),
-                                 static_cast<const uint8*> (mapped.pData) + (size_t) row * mapped.RowPitch,
-                                 rowBytes);
+                {
+                    auto* line = bitmapData.getLinePointer (row);
+                    std::memcpy (line, static_cast<const uint8*> (mapped.pData) + (size_t) row * mapped.RowPitch, rowBytes);
+
+                    // The engine may write alpha 0 in a letterbox border, and `paint()` draws nothing under the frame,
+                    // so we make every pixel opaque, otherwise the border would show whatever lies under the picture.
+                    for (size_t alphaOffset = 3; alphaOffset < rowBytes; alphaOffset += 4)
+                        line[alphaOffset] = 0xff;
+                }
             }
 
             context->Unmap (staging, 0);
@@ -1190,6 +1225,7 @@ private:
     String audioEndpointId;
     double playbackRate = 1.0;
     float volume = 1.0f;
+    float cornerRadius = 0.0f;
 
     // The owner's transport state, which isPlaying() and isEnded() read, because the engine loses its state in a reopen
     // and doesn't pause at the end of the file.

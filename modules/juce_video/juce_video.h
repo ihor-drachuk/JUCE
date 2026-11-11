@@ -52,8 +52,8 @@
   minimumCppStandard: 17
 
   dependencies:       juce_gui_extra
-  OSXFrameworks:      AVKit AVFoundation CoreMedia
-  iOSFrameworks:      AVKit AVFoundation CoreMedia
+  OSXFrameworks:      AVKit AVFoundation CoreMedia QuartzCore
+  iOSFrameworks:      AVKit AVFoundation CoreMedia QuartzCore
   windowsLibs:        d3d11 mfplat mfreadwrite mfuuid
 
  END_JUCE_MODULE_DECLARATION

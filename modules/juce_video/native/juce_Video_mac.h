@@ -197,10 +197,53 @@ struct VideoComponent::Pimpl   : public Base
     void setAudioOutputDevice (const String& deviceID)  { audioOutputDeviceID = deviceID; }
     String getAudioOutputDevice() const                 { return audioOutputDeviceID; }
 
+    void setCornerRadius (float newRadius)
+    {
+        jassert (newRadius >= 0.0f);
+        cornerRadius = newRadius;
+        updateLayerCornerRadius();
+    }
+
+    float getCornerRadius() const                       { return cornerRadius; }
+
+   #if JUCE_MAC
+    // Scales the radius to the new frame, because `NSViewComponent` calls `childBoundsChanged` when the frame of
+    // `getView()` changes. While the radius is 0 we don't touch the layer, so that a `VideoComponent` whose radius
+    // was never set keeps the layer's own `cornerRadius` and `masksToBounds`.
+    void childBoundsChanged (Component*) override
+    {
+        if (cornerRadius > 0.0f)
+            updateLayerCornerRadius();
+    }
+   #endif
+
     File currentFile;
     URL currentURL;
 
 private:
+    void updateLayerCornerRadius()
+    {
+       #if JUCE_MAC
+        auto* view = (NSView*) getView();
+        // The frame of `getView()` is the area that this `Pimpl` covers in the peer with the ancestors' transforms
+        // applied, so we scale the radius from component coordinates to the frame's points.
+        const auto scale = (view != nil && getWidth() > 0) ? [view frame].size.width / (CGFloat) getWidth() : (CGFloat) 0;
+       #else
+        auto* view = (UIView*) getView();
+        const auto scale = (CGFloat) 1;
+       #endif
+
+        if (view == nil)
+            return;
+
+        // We disable the layer's actions, otherwise a radius change on a layer that the view hosts would be animated.
+        [CATransaction begin];
+        [CATransaction setDisableActions: YES];
+        view.layer.cornerRadius = (CGFloat) cornerRadius * scale;
+        view.layer.masksToBounds = cornerRadius > 0.0f;
+        [CATransaction commit];
+    }
+
     //==============================================================================
     template <typename Derived>
     class PlayerControllerBase
@@ -848,6 +891,7 @@ private:
     }
 
     String audioOutputDeviceID;
+    float cornerRadius = 0.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (Pimpl)
 };

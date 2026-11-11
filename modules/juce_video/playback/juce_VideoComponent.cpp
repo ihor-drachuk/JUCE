@@ -118,6 +118,9 @@ float VideoComponent::getAudioVolume() const                { return pimpl->getV
 void VideoComponent::setAudioOutputDevice (const String& deviceID)  { pimpl->setAudioOutputDevice (deviceID); }
 String VideoComponent::getAudioOutputDevice() const                 { return pimpl->getAudioOutputDevice(); }
 
+void VideoComponent::setCornerRadius (float newRadius)              { pimpl->setCornerRadius (newRadius); }
+float VideoComponent::getCornerRadius() const                       { return pimpl->getCornerRadius(); }
+
 void VideoComponent::resized()
 {
     auto r = getLocalBounds();
